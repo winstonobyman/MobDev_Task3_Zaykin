@@ -16,8 +16,8 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
-        String urlString = "https://ru.wikipedia.org/w/api.php?action=query&amp;" +
-                "list=search&amp;utf8=&amp;format=json&amp;srsearch=Java";
+        String urlString = "https://ru.wikipedia.org/w/api.php" +
+                "?action=query&amp%3Blist=search&amp%3Butf8=&amp%3Bformat=json&amp%3Bsrsearch=Java&format=json";
 
         String result = getQueryResult(urlString);
         System.out.println(result);
@@ -31,18 +31,9 @@ public class Main {
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setConnectTimeout(CONNECTION_TIMEOUT);
 
-        try (final BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-            String inputLine;
-            final StringBuilder content = new StringBuilder();
-            while ((inputLine = in.readLine()) != null) {
-                content.append(inputLine);
-            }
-                return content.toString();
-            } catch (final Exception ex) {
-                ex.printStackTrace();
-                return "";
-            }
-
+        Scanner sc = new Scanner(new InputStreamReader(connection.getInputStream())).useDelimiter("\\A");
+        String result = sc.hasNext() ? sc.next() : "";
+        return result;
         }
 
     public static void readInput() {

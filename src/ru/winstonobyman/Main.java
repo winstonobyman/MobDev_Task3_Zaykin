@@ -4,8 +4,11 @@ package ru.winstonobyman;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 
@@ -21,6 +24,8 @@ public class Main {
 
         String urlString = "https://ru.wikipedia.org/w/api.php" +
                 "?action=query&amp%3Blist=search&amp%3Butf8=&amp%3Bformat=json&amp%3Bsrsearch=Java&format=json";
+
+        urlString = getUserQuery();
 
         String result = getQueryResult(urlString);
         System.out.println(result);
@@ -56,5 +61,14 @@ public class Main {
         String userQuery = sc.nextLine();
 
         return userQuery;
+    }
+
+    public static String generateQuery(String userInput) throws UnsupportedEncodingException {
+        String urlString = "https://ru.wikipedia.org/w/api.php?action=query&list=search" +
+                "&format=json&utf8=&srlimit=1&srsearch=Java";
+
+        String input = URLEncoder.encode(getUserQuery(), "UTF-8");
+
+        return urlString + input;
     }
 }

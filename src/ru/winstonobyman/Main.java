@@ -6,9 +6,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
+import javax.swing.text.html.HTML;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -26,32 +25,54 @@ public class Main {
     final static int CONNECTION_TIMEOUT = 120; // параметр таймаута
 
     public static void main(String[] args) throws IOException {
-
         String urlString;
-
         String question = getUserRequest();
         urlString = generateQuery(question);
-
         String jsonQueryResult = getQueryResult(urlString);
         System.out.println(jsonQueryResult);
         JsonElement body = new JsonParser().parse(jsonQueryResult).getAsJsonObject().get("query");
-        System.out.println("body = " + body);
         if (validateQuery(body)) {
-            getSnippet(body);
+            int pageId = getPageID(body);
+            String page = getPageById(pageId);
+            FileWriter fw = new FileWriter("page.txt", false);
+            fw.write(page);
+            fw.flush();
         }
+
 
     }
 
-    public static String getSnippet(JsonElement body) {
-        System.out.println("Main.getSnippet");
-        JsonElement snippetRaw = body.getAsJsonObject().get("search")
-                .getAsJsonArray().get(0).getAsJsonObject().get("snippet");
-        System.out.println(snippetRaw);
-        return snippetRaw.toString();
+    //https://en.wikipedia.org/w/api.php?action=parse&pageid=3276454&prop=wikitext&formatversion=2
+
+    public static String getPageById(int pageId) throws IOException {
+        // строка запроса.
+        // StringBuilder для построения запроса  (удобнее добавлять и можно легче изменить)
+        StringBuilder urlString = new StringBuilder("https://ru.wikipedia.org/w/api.php?");
+        urlString.append("action=parse") // делаем запрос
+                .append("&format=json") // выдаем данные как json
+                .append("&utf8=")        //  ставим кодировку
+                .append("&prop=text")   // выводим только один элемент
+                .append("&formatversion=2") // среди свойств нужен отрывок из статьи
+                .append("&pageid=" + pageId) // начало для запроса от нашего клиента
+                ;
+        String jsonPage = getQueryResult(urlString.toString());
+//        System.out.println(jsonPage);
+        jsonPage = new JsonParser().parse(jsonPage).getAsJsonObject().get("parse").
+                getAsJsonObject().get("text").toString().replaceAll("\\<[^>]*>","")
+                .replaceAll("\\[править \\| править код\\]", "")
+                .replaceAll("\\n", "\r\n");
+        return jsonPage;
+    }
+
+    public static int getPageID(JsonElement body) {
+        JsonElement pageIdRaw = body.getAsJsonObject().get("search")
+                .getAsJsonArray().get(0).getAsJsonObject().get("pageid");
+        System.out.println("Page ID: " + pageIdRaw);
+        return pageIdRaw.getAsInt();
+
     }
 
     public static boolean validateQuery(JsonElement body) {
-        System.out.println("Main.validateQuery");
         JsonElement totalHits = body.getAsJsonObject().get("searchinfo").getAsJsonObject().get("totalhits");
         System.out.println("totalHits = " + totalHits);
         if (totalHits.getAsInt() == 0) {
@@ -65,7 +86,6 @@ public class Main {
     }
 
     public static String getQueryResult(String urlString) throws IOException {
-        System.out.println("Main.getQueryResult");
         URL url = new URL(urlString);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
@@ -77,7 +97,6 @@ public class Main {
         }
 
     public static String getUserRequest() {
-        System.out.println("Main.getUserQuestion");
         Scanner sc = new Scanner(System.in);
         System.out.println("Введите ваш запрос: ");
         String userQuestion = sc.nextLine();
@@ -90,7 +109,6 @@ public class Main {
     }
 
     public static String generateQuery(String userInput) throws UnsupportedEncodingException {
-        System.out.println("Main.generateQuery");
         // строка запроса.
         // StringBuilder для построения запроса  (удобнее добавлять и можно легче изменить)
         StringBuilder urlString = new StringBuilder("https://ru.wikipedia.org/w/api.php?");

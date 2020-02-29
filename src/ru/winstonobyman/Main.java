@@ -22,10 +22,10 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
-        String urlString = "https://ru.wikipedia.org/w/api.php" +
-                "?action=query&amp%3Blist=search&amp%3Butf8=&amp%3Bformat=json&amp%3Bsrsearch=Java&format=json";
+        String urlString;
 
-        urlString = getUserQuery();
+        String question = getUserQuestion();
+        urlString = generateQuery(question);
 
         String result = getQueryResult(urlString);
         System.out.println(result);
@@ -35,6 +35,7 @@ public class Main {
         }
 
     public static String getQueryResult(String urlString) throws IOException {
+        System.out.println("Main.getQueryResult");
         URL url = new URL(urlString);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
@@ -45,30 +46,26 @@ public class Main {
         return result;
         }
 
-    public static void readInput() {
-        String userQuery;
-        while (true) {
-            userQuery = getUserQuery();
-            if (userQuery.equals(""))
-                break;
-            System.out.println(userQuery);
-        }
-    }
-
-    public static String getUserQuery() {
+    public static String getUserQuestion() {
+        System.out.println("Main.getUserQuestion");
         Scanner sc = new Scanner(System.in);
         System.out.println("Введите ваш запрос: ");
-        String userQuery = sc.nextLine();
-
-        return userQuery;
+        String userQuestion = sc.nextLine();
+        // Очищаем строку, чтобы не было пробельных и им подобных символов
+        userQuestion = userQuestion.replaceAll("\\s", "");
+        if (userQuestion.equals("")) {
+            throw new IllegalArgumentException("Был введён пустой запрос");
+        }
+        return userQuestion;
     }
 
     public static String generateQuery(String userInput) throws UnsupportedEncodingException {
+        System.out.println("Main.generateQuery");
         String urlString = "https://ru.wikipedia.org/w/api.php?action=query&list=search" +
-                "&format=json&utf8=&srlimit=1&srsearch=Java";
+                "&format=json&utf8=&srlimit=1&srsearch=";
 
-        String input = URLEncoder.encode(getUserQuery(), "UTF-8");
-
+        String input = URLEncoder.encode(userInput, "UTF-8");
+        System.out.println(urlString + input);
         return urlString + input;
     }
 }

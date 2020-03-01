@@ -1,18 +1,14 @@
 package ru.winstonobyman;
 
 
-import com.google.gson.Gson;
+
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import javax.swing.text.html.HTML;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
 import java.util.Scanner;
 
 
@@ -29,20 +25,22 @@ public class Main {
         String question = getUserRequest();
         urlString = generateQuery(question);
         String jsonQueryResult = getQueryResult(urlString);
-        System.out.println(jsonQueryResult);
         JsonElement body = new JsonParser().parse(jsonQueryResult).getAsJsonObject().get("query");
         if (validateQuery(body)) {
+            System.out.println("Фрагмент статьи: ");
+            System.out.println(getSnippet(body));
+            System.out.println("Вы желаете получить полную статью по данному фрагменту (да/нет)?" +
+                    " Будет проведена запись в файл page.txt в корне проета.");
+            if (new Scanner(System.in).nextLine().replaceAll("\\s", "").equals("да")) {
             int pageId = getPageID(body);
             String page = getPageById(pageId);
             FileWriter fw = new FileWriter("page.txt", false);
             fw.write(page);
             fw.flush();
+            }
         }
-
-
     }
 
-    //https://en.wikipedia.org/w/api.php?action=parse&pageid=3276454&prop=wikitext&formatversion=2
 
     public static String getPageById(int pageId) throws IOException {
         // строка запроса.
@@ -56,25 +54,31 @@ public class Main {
                 .append("&pageid=" + pageId) // начало для запроса от нашего клиента
                 ;
         String jsonPage = getQueryResult(urlString.toString());
-//        System.out.println(jsonPage);
         jsonPage = new JsonParser().parse(jsonPage).getAsJsonObject().get("parse").
-                getAsJsonObject().get("text").toString().replaceAll("\\<[^>]*>","")
-                .replaceAll("\\[править \\| править код\\]", "")
-                .replaceAll("\\n", "\r\n");
+                getAsJsonObject().get("text").toString().replaceAll("<[^>]*>","")
+                .replaceAll("\\[править \\| править код]", "")
+                .replaceAll("\\n", "\r\n")
+                .replaceAll("&#\\w*;", "")
+
+                ;
         return jsonPage;
+    }
+
+    public static String getSnippet(JsonElement body) {
+        JsonElement pageSnippetRaw = body.getAsJsonObject().get("search")
+                .getAsJsonArray().get(0).getAsJsonObject().get("snippet");
+        return pageSnippetRaw.toString().replaceAll("<[^>]*>","");
     }
 
     public static int getPageID(JsonElement body) {
         JsonElement pageIdRaw = body.getAsJsonObject().get("search")
                 .getAsJsonArray().get(0).getAsJsonObject().get("pageid");
-        System.out.println("Page ID: " + pageIdRaw);
         return pageIdRaw.getAsInt();
 
     }
 
     public static boolean validateQuery(JsonElement body) {
         JsonElement totalHits = body.getAsJsonObject().get("searchinfo").getAsJsonObject().get("totalhits");
-        System.out.println("totalHits = " + totalHits);
         if (totalHits.getAsInt() == 0) {
             System.out.println("Не найдено ни одной статьи.");
             return false;
